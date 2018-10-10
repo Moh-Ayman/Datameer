@@ -1,0 +1,6 @@
+#!/bin/bash
+curl -vku ':' -X GET 'http://localhost:8443/rest/import-job' | grep -wC 4 "$1" | grep -C 4 ".upl" | grep -w "id" | cut -d: -f2 > uploadids
+while read p;
+do
+curl -ku ':' -X POST 'http://localhost:8443/rest/job-execution?configuration='$p''
+done <uploadids
