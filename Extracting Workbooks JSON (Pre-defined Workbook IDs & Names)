@@ -1,0 +1,11 @@
+#!/bin/bash
+
+_Array=( "955" "954" "956" "868" "860" "869" "864" "862" "859" "865" "872" "889" "885" "878" "880" "883" "884" "892" "891" "921" "917" "914" "918" "906" "919" "881" "907" "916" "915" "949" "929" "920" )
+_Workbook=( "WB1" "WB2" "WB3" "WB4" "WB5" "WB6" "WB7" "WB8" "WB9" "WB10" "WB11" "WB12" "WB13" "WB14" "WB15" "WB16" "WB17" "WB18" "WB19" "WB20" "WB21" "WB22" "WB23" "WB24" "WB25" "WB26" "WB27" "WB28" "WB29" "WB30" "WB31" "WB32" )
+for ((i=0;i<${#Array[@]};i++))
+do
+echo "Workbook"${Workbook[$i]}""${_Array[$i]}""
+x="${Array[$i]}"
+curl -vku ':' -X GET 'http://localhost:8443/rest/workbook/'$x > ./Datameer_Doc_WorkbooksJSON/Workbook"${Workbook[$i]}""${_Array[$i]}".json
+echo "$i Done"
+done
