@@ -1,0 +1,20 @@
+#!/bin/bash
+while read line
+do
+Path=echo $line | cut -f1 -d',' | cut -f2 -d'"'
+Path="${Path// /_}"
+#Final_JSON_Dir
+Path=echo "$Path" | rev | cut -d"/" -f2- | rev
+mkdir -vp ~/Final_JSON_Dir/$Path
+echo $Path
+Name=echo $line | cut -f2 -d','| cut -f2 -d'"'
+ID=echo $line | cut -f3 -d','
+#echo "Path=$Path"
+#echo "Name=$Name"
+#echo "ID=$ID"
+Path="/home/admin/Final_JSON_Dir$Path/$Name.json"
+URL="https://localhost:8443/rest/workbook/"$ID
+URL=${URL%$'\r'}
+curl -svku ':' -X GET "$URL" > "$Path"
+done < ~/Workbooks.csv
+
