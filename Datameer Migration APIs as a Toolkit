@@ -1,0 +1,181 @@
+#!/bin/bash
+clear
+FolderID=$2
+TOFolder=$3
+echo_prinT() {
+local name=$1
+(echo
+echo -n "#"
+for ((i=0;i<$((${#name}+8));i++))
+do
+echo -n "-"
+done
+echo "#"
+echo -n "#----"
+if [ "$2" = "error" ]
+then
+echo -ne "\e[1m\e[31m$name\e[0m"
+elif [ "$2" = "head" ]
+then
+echo -ne "\e[1m\e[92m$name\e[0m"
+elif [ "$2" = "subhead" ]
+then
+echo -ne "\e[1m\e[96m$name\e[0m"
+else
+echo -ne "$name"
+fi
+echo "----#"
+echo -n "#"
+for ((j=0;j<$((${#name}+8));j++))
+do
+echo -n "-"
+done
+echo "#")
+return 0
+}
+function inputCredentials {
+read -ep "Please, DM Account Username : " dm_username
+usernameCheck=grep -acw $dm_username ./LoginCredentials
+if [[ $usernameCheck -eq "0" ]]
+then
+read -esp "Please, DM Account Password : " dm_password
+echo
+read -esp "Please Again, DM Account Password : " dm_password_again
+echo
+else
+read -ep "Login Using Saved Credentials ? [Y/n] : " _YN3
+if [[ $_YN3 == "y" ]] || [[ "$_YN3" == "Y" ]] || [[ "$_YN3" = "" ]]
+then
+dm_password=grep -w maram ./LoginCredentials | cut -f2 -d:
+AutoLoginFlag=1
+echo $dm_password
+elif [[ $_YN3 == "n" ]] || [[ "$_YN3" == "N" ]]
+then
+#sed -i "/$dm_username/d" ./LoginCredentials
+read -esp "Please, DM Account Password : " dm_password
+echo
+read -esp "Please Again, DM Account Password : " dm_password_again
+echo
+fi
+fi
+#read -esp "Please, DM Account Password : " dm_password
+#echo
+#read -esp "Please Again, DM Account Password : " dm_password_again
+#echo
+}
+function credentialsCheck {
+for (( i=0;i<=3;i++ ))
+do
+echo
+eval "echo User = $dm_username"
+for (( i=0;i<=3;i++ ))
+do
+if [[ $dm_password = $dm_password_again ]]
+then
+echo "Password : Both Passwords Entered Matches each Other"
+break
+else
+echo "Password : Both Passwords Entered Does Not Match each Other"
+read -esp "Please, DM Account Password : " dm_password
+echo
+read -sep "Please Again, DM Account Password : " dm_password_again
+echo
+fi
+done
+echo "--------------------------"
+read -ep "Are the credintials Right ? [Y/n] : " _YN1
+if [[ $_YN1 == "y" ]] || [[ "$_YN1" == "Y" ]] || [[ "$_YN1" = "" ]]
+then
+read -ep "Remember Login ? [Y/n] : " _YN2
+if [[ $_YN2 == "y" ]] || [[ "$_YN2" == "Y" ]] || [[ "$_YN2" = "" ]]
+then
+sed -i "/$dm_username/d" ./LoginCredentials
+echo ""$dm_username":"$dm_password"" >> ./LoginCredentials
+elif [[ $_YN2 == "n" ]] || [[ "$_YN2" == "N" ]]
+then
+break
+fi
+break
+elif [[ $_YN1 == "n" ]] || [[ "$_YN1" == "N" ]]
+then
+if [[ "$i" -eq "2" ]]
+then
+exit
+else
+inputCredentials
+fi
+fi
+#read -ep "Remember Login ? [Y/n] : " _YN2
+#if [[ $_YN2 == "y" ]] || [[ "$_YN2" == "Y" ]] || [[ "$_YN2" = "" ]]
+#then
+# echo ""$dm_username":"$dm_password"" >> ./LoginCredentials
+#elif [[ $_YN2 == "n" ]] || [[ "$_YN2" == "N" ]]
+#then
+# break
+#fi
+done
+}
+function listroot {
+
+curl -vku $dm_username:$dm_password -X GET 'https://localhost:8443/api/filesystem/root-folder'
+}
+function listdir {
+
+curl -vku $dm_username:$dm_password -X GET 'https://localhost:8443/api/filesystem/folders/'$FolderID''
+}
+function BackupIncludingPermissions {
+Permissions="?includeOwner&includeGroupPermissions&includeSharing&includeDataPermissions"
+curl -vku $dm_username:$dm_password -X GET 'https://localhost:8443/api/filesystem/folders/'$FolderID'/backup'$Permissions'' -o DatameerPack-"$FolderID"-All.zip
+}
+function BasicBackup {
+curl -vku $dm_username:$dm_password -X GET 'https://localhost:8443/api/filesystem/folders/'$FolderID'/backup' -o DatameerPack-"$FolderID"-Basic.zip
+}
+function RestoreIncludingPermissions {
+curl -kvu $dm_username:$dm_password -X PUT --data-binary @./DatameerPack-"$FolderID"-All-.zip -H 'Content-Type: application/zip' 'https://localhost:8443/api/filesystem/folders/'$TOFolder'/restore?includeGroupPermissions&ignoreUnknownGroups&includeSharing&includeOwner&substituteMissingUser&includeDataPermissions'
+}
+function BasicRestore {
+curl -kvu $dm_username:$dm_password -X PUT --data-binary @./DatameerPack-"$FolderID"-All-.zip -H 'Content-Type: application/zip' 'https://localhost:8443/api/filesystem/folders/'$TOFolder'/restore'
+}
+if [[ "$1" = "-listroot" ]] || [[ "$1" = "-listdir" ]] || [[ "$1" = "-backup" ]] || [[ "$1" = "-backup-perm" ]] || [[ "$1" = "-restore" ]] || [[ "$1" = "-restore-perm" ]] || [[ "$1" = "-test" ]]
+
+then
+echo_prinT "Datameer Migration Toolkit"
+inputCredentials
+if [[ "$AutoLoginFlag" -ne 1 ]]
+then
+credentialsCheck
+fi
+if [[ "$1" = "-listroot" ]]
+then
+listroot
+elif [[ "$1" = "-listdir" ]]
+then
+listdir
+elif [[ "$1" = "-backup" ]]
+then
+BasicBackup
+elif [[ "$1" = "-backup-perm" ]]
+then
+BackupIncludingPermissions
+
+elif [[ "$1" = "-restore" ]]
+    then
+            BasicRestore
+elif [[ "$1" = "-restore-perm" ]]
+    then
+            RestoreIncludingPermissions
+elif [[ "$1" = "-test" ]]
+    then
+            echo TestDone
+    fi
+else
+echo "Usage: ./.../dm-Migration.sh [OPTION]... "
+echo "Options:
+RMARK: Options Order Is Mandatory
+-listroot ............................... List Root Directory.
+-listdir [Dir ID] .................. List Specified Directory.
+-backup [Dir ID] .................. Backup Folder Without Permissions
+-backup-perm [Dir ID] .................. Backup Folder With Permissions
+-restore [From Dir ID] [To Dir ID] . Restore Folder Without Permissions
+-restore-perm [From Dir ID] [To Dir ID] . Restore Folder With Permissions"
+fi
