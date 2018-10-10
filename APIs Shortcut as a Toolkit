@@ -1,0 +1,48 @@
+#!/bin/bash
+
+username=##USERNAME
+password=##PASSWORD
+ID=$2
+TO=$3
+function listroot {
+
+curl -vku $username:$password -X GET 'https://localhost:8443/api/filesystem/root-folder'
+}
+function listdir {
+
+curl -vku $username:$password -X GET 'https://localhost:8443/api/filesystem/folders/'$ID''
+}
+function backupall {
+curl -vku $username:$password -X GET 'https://localhost:8443/api/filesystem/folders/'$ID'/backup?includeDataPermissions&includeGroupPermissions&includeOwner&includeSharing' -o DatameerPack-"$ID"-All.zip
+}
+
+function restoreall {
+curl -kvu $username:$password -X PUT --data-binary @./DatameerPack-"$ID"-All-.zip -H 'Content-Type: application/zip' 'https://localhost:8443/api/filesystem/folders/'$TO'/restore?includeGroupPermissions&includeGroupPermissions&ignoreUnknownGroups&includeSharing&includeOwner&includeOwner&substituteMissingUser'
+
+}
+if [[ "$1" = "-listroot" ]] || [[ "$1" = "-listdir" ]] || [[ "$1" = "-backupall" ]] || [[ "$1" = "-restoreall" ]]
+then
+if [[ "$1" = "-listroot" ]]
+then
+listroot
+elif [[ "$1" = "-listdir" ]]
+then
+listdir
+elif [[ "$1" = "-backupall" ]]
+then
+backupall
+elif [[ "$1" = "-restoreall" ]]
+then
+restoreall
+fi
+else
+echo "Usage: ./.../DatameerPackRUN.sh [OPTION]... "
+echo "Options:
+REMARK: Options Order Is Mandatory
+-listroot	List Root Directory.
+
+-listdir    [Dir ID]    List Specified Directory.
+
+-backupall  [Dir ID]	Backup Folder With All Permissions
+
+-restoreall [From Dir ID] [To Dir ID]    Restore Folder With All Permissions"
